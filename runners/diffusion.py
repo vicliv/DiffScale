@@ -153,7 +153,7 @@ class Diffusion(object):
                 # ).to(self.device)
                 # t = torch.cat([t, self.num_timesteps - t - 1], dim=0)[:n]
                 
-                bin = torch.randint(0, f, (1,))
+                bin = torch.randint(0, f, (1,)).item()
                 t = torch.randint(self.num_timesteps//f*bin, self.num_timesteps//f*(bin+1), (n,), device=self.device).long()
                 loss = loss_registry[config.model.type](model, x, t, b, bin)
 
