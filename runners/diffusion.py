@@ -205,7 +205,6 @@ class Diffusion(object):
                     device=self.device,
                 )
                 
-                
                 x = self.generate_image(x, model)
                 x = inverse_data_transform(config, x)
 
@@ -744,9 +743,6 @@ class Diffusion(object):
             else:
                 raise NotImplementedError
             from functions.denoising import generalized_steps
-            
-            xs = generalized_steps(x, seq, model, self.betas, eta=self.args.eta)
-            x = xs
 
             for bin in range(f-1, -1, -1):
                 frames = []
@@ -755,7 +751,7 @@ class Diffusion(object):
                 x = xs[0][-1]
                 
                 if bin > 0:
-                    _, x = model(x.to(device), (torch.ones(x.size(0)) *  (self.num_timesteps//f*(bin) -1)).to(self.device).long())
+                    _, x = model(x.to(self.device), (torch.ones(x.shape[0]) *  (self.num_timesteps//f*(bin) -1)).to(self.device).long())
 
         elif self.args.sample_type == "ddpm_noisy":
             if self.args.skip_type == "uniform":
