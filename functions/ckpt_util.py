@@ -35,7 +35,9 @@ MD5_MAP = {
 
 
 def download(url, local_path, chunk_size=1024):
-    os.makedirs(os.path.split(local_path)[0], exist_ok=True)
+    os.umask(000)
+    print(os.path.split(local_path)[0])
+    os.makedirs(os.path.split(local_path)[0], exist_ok=True, mode=0o777)
     with requests.get(url, stream=True) as r:
         total_size = int(r.headers.get("content-length", 0))
         with tqdm(total=total_size, unit="B", unit_scale=True) as pbar:
@@ -57,7 +59,7 @@ def get_ckpt_path(name, root=None, check=False):
         name = name.replace('church_outdoor', 'church')
     assert name in URL_MAP
     # Modify the path when necessary
-    cachedir = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("/atlas/u/tsong/.cache"))
+    cachedir = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("./.cache"))
     root = (
         root
         if root is not None

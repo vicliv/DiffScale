@@ -285,9 +285,9 @@ class Model(nn.Module):
             up = nn.Module()
             up.block = block
             up.attn = attn
-            if i_level != 0:
-                up.upsample = Upsample(block_in, resamp_with_conv)
-                curr_res = curr_res * 2
+            #if i_level != 0:
+            up.upsample = Upsample(block_in, resamp_with_conv)
+            curr_res = curr_res * 2
             self.up.insert(0, up)  # prepend to get consistent order
 
         # end
@@ -299,7 +299,7 @@ class Model(nn.Module):
                                         padding=1)
 
     def forward(self, x, t):
-        assert x.shape[2] == x.shape[3] == self.resolution
+        #assert x.shape[2] == x.shape[3] == self.resolution
 
         # timestep embedding
         temb = get_timestep_embedding(t, self.ch)
@@ -333,9 +333,15 @@ class Model(nn.Module):
                     h = self.up[i_level].attn[i_block](h)
             if i_level != 0:
                 h = self.up[i_level].upsample(h)
+            else:
+                 y = self.up[i_level].upsample(h)
 
         # end
         h = self.norm_out(h)
         h = nonlinearity(h)
         h = self.conv_out(h)
-        return h
+        
+        y = self.norm_out(y)
+        y = nonlinearity(y)
+        y = self.conv_out(y)
+        return h, y

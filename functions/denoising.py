@@ -19,7 +19,7 @@ def generalized_steps(x, seq, model, b, **kwargs):
             at = compute_alpha(b, t.long())
             at_next = compute_alpha(b, next_t.long())
             xt = xs[-1].to('cuda')
-            et = model(xt, t)
+            et, _ = model(xt, t)
             x0_t = (xt - et * (1 - at).sqrt()) / at.sqrt()
             x0_preds.append(x0_t.to('cpu'))
             c1 = (
@@ -28,6 +28,51 @@ def generalized_steps(x, seq, model, b, **kwargs):
             c2 = ((1 - at_next) - c1 ** 2).sqrt()
             xt_next = at_next.sqrt() * x0_t + c1 * torch.randn_like(x) + c2 * et
             xs.append(xt_next.to('cpu'))
+
+    return xs, x0_preds
+
+# def generalized_steps(x, seq, model, b, **kwargs):
+#     n = x.size(0)
+#     seq_next = [-1] + list(seq[:-1])
+    
+#     for i, j in zip(reversed(seq), reversed(seq_next)):
+#         t = torch.tensor([i]).to(x.device)
+#         next_t = torch.tensor([j]).to(x.device)
+#         at = compute_alpha(b, t.long()).squeeze()
+#         at_next = compute_alpha(b, next_t.long()).squeeze()
+#         xt = x
+#         et = et = model(xt.unsqueeze(0), t).squeeze()
+
+#         x0_t = (xt - et * (1 - at).sqrt()) / at.sqrt()
+
+#         c2 = ((1 - at_next)).sqrt()
+#         xt_next = at_next.sqrt() * x0_t + c2 * et
+#         x = xt_next
+#     return x
+
+def reverse_generalized_steps(x, seq, model, b, **kwargs):
+    with torch.no_grad():
+        n = x.size(0)
+        seq_prev = [-1] + list(seq[:-1])
+        x0_preds = []
+        xs = [x]
+        for i, j in zip(seq, seq_prev):
+            t = (torch.ones(n) * i).to(x.device)
+            prev_t = (torch.ones(n) * j).to(x.device)
+            at = compute_alpha(b, t.long())
+            at_prev = compute_alpha(b, prev_t.long())
+            xt_prev = xs[-1].to('cuda')
+            et = model(xt_prev, prev_t)
+            
+            #x0_t = (xt - et * (1 - at).sqrt()) / at.sqrt()
+            #x0_preds.append(x0_t.to('cpu'))
+            c1 = (
+                kwargs.get("eta", 0) * ((1 - at / at_prev) * (1 - at_prev) / (1 - at)).sqrt()
+            )
+            c2 = ((1 - at_prev) - c1 ** 2).sqrt()
+            
+            xt = (at/at_prev).sqrt() * (xt_prev - c1 * torch.randn_like(x) - c2 * et) + (1 - at).sqrt() * et
+            xs.append(xt.to('cpu'))
 
     return xs, x0_preds
 
